@@ -42,61 +42,46 @@ func Logger(ctx context.Context) (logger *zap.Logger) {
 	return logger
 }
 
-var skipFrame = [...]zap.Option{
-	zap.AddCallerSkip(1),
-	zap.AddCallerSkip(2),
-	zap.AddCallerSkip(3),
-	zap.AddCallerSkip(4),
-	zap.AddCallerSkip(5),
-}
-
-func skipCallFrame(skip int) []zap.Option {
-	if skip < 1 {
-		return nil
-	} else if skip <= len(skipFrame) {
-		return skipFrame[skip-1 : skip]
-	}
-	return []zap.Option{zap.AddCallerSkip(skip)}
-}
+var skipLoggerFrame = []zap.Option{zap.AddCallerSkip(1)}
 
 // Check is a convenience function for calling Logger(ctx).Check(lvl, msg).
 func Check(ctx context.Context, lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
-	return Logger(ctx).WithOptions(skipCallFrame(1)...).Check(lvl, msg)
+	return Logger(ctx).WithOptions(skipLoggerFrame...).Check(lvl, msg)
 }
 
 // DPanic is a convenience function for calling Logger(ctx).DPanic(msg, fields...).
 func DPanic(ctx context.Context, msg string, fields ...zapcore.Field) {
-	Logger(ctx).WithOptions(skipCallFrame(1)...).DPanic(msg, fields...)
+	Logger(ctx).WithOptions(skipLoggerFrame...).DPanic(msg, fields...)
 }
 
 // Debug is a convenience function for calling Logger(ctx).Debug(msg, fields...).
 func Debug(ctx context.Context, msg string, fields ...zapcore.Field) {
-	Logger(ctx).WithOptions(skipCallFrame(1)...).Debug(msg, fields...)
+	Logger(ctx).WithOptions(skipLoggerFrame...).Debug(msg, fields...)
 }
 
 // Error is a convenience function for calling Logger(ctx).Error(msg, fields...).
 func Error(ctx context.Context, msg string, fields ...zapcore.Field) {
-	Logger(ctx).WithOptions(skipCallFrame(1)...).Error(msg, fields...)
+	Logger(ctx).WithOptions(skipLoggerFrame...).Error(msg, fields...)
 }
 
 // Fatal is a convenience function for calling Logger(ctx).Fatal(msg, fields...).
 func Fatal(ctx context.Context, msg string, fields ...zapcore.Field) {
-	Logger(ctx).WithOptions(skipCallFrame(1)...).Fatal(msg, fields...)
+	Logger(ctx).WithOptions(skipLoggerFrame...).Fatal(msg, fields...)
 }
 
 // Info is a convenience function for calling Logger(ctx).Info(msg, fields...).
 func Info(ctx context.Context, msg string, fields ...zapcore.Field) {
-	Logger(ctx).WithOptions(skipCallFrame(1)...).Info(msg, fields...)
+	Logger(ctx).WithOptions(skipLoggerFrame...).Info(msg, fields...)
 }
 
 // Panic is a convenience function for calling Logger(ctx).Panic(msg, fields...).
 func Panic(ctx context.Context, msg string, fields ...zapcore.Field) {
-	Logger(ctx).WithOptions(skipCallFrame(1)...).Panic(msg, fields...)
+	Logger(ctx).WithOptions(skipLoggerFrame...).Panic(msg, fields...)
 }
 
 // Warn is a convenience function for calling Logger(ctx).Warn(msg, fields...).
 func Warn(ctx context.Context, msg string, fields ...zapcore.Field) {
-	Logger(ctx).WithOptions(skipCallFrame(1)...).Warn(msg, fields...)
+	Logger(ctx).WithOptions(skipLoggerFrame...).Warn(msg, fields...)
 }
 
 // Sugar is a convenience function for calling Logger(ctx).Sugar().
