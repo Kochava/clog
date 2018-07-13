@@ -17,39 +17,49 @@ type LogFunc func(string, ...zapcore.Field)
 
 var zeroLevel = zap.AtomicLevel{}
 
+func sanitizeEnvRune(r rune) rune {
+	r = unicode.ToUpper(r)
+	if r == '_' || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+		return r
+	}
+	return -1
+}
+
+func envPrefix(procname string) string {
+	if procname == "" && len(os.Args) > 0 {
+		procname = filepath.Base(os.Args[0])
+		procname = procname[:len(procname)-len(filepath.Ext(procname))]
+	}
+	procname = strings.Map(sanitizeEnvRune, procname)
+	if procname == "" {
+		return ""
+	}
+	return procname + "_"
+}
+
+// GetEnvConfig returns the environment-configured logging level and whether to use JSON and debug
+// logging for procname. If procname is the empty string, os.Args[0] is used instead.
+//
+// If the PROCNAME_LEVEL value is invalid or not set, it defaults to zap.WarnLevel.
+// If either the PROCNAME_JSON or PROCNAME_DEBUG, they default to false.
+func GetEnvConfig(procname string) (level zapcore.Level, json, debug bool) {
+	prefix := envPrefix(procname)
+	json, _ = strconv.ParseBool(os.Getenv(prefix + "LOG_JSON"))
+	debug, _ = strconv.ParseBool(os.Getenv(prefix + "LOG_DEBUG"))
+	if txt, ok := os.LookupEnv(prefix + "LOG_LEVEL"); !ok || level.UnmarshalText([]byte(txt)) != nil {
+		level = zap.WarnLevel
+	}
+	return
+}
+
 // NewFromEnv allocates a new zap.Logger using configuration from the environment. This looks for
 // PROCNAME_LOG_JSON, PROCNAME_LOG_DEBUG, and PROCNAME_LOG_LEVEL to configure the logger. If JSON
 // logs are used, the format is standard zap without modification.
 func NewFromEnv(procname string, level zap.AtomicLevel) (*zap.Logger, error) {
-	var json, debug bool
-	prefix := ""
-	if len(os.Args) > 0 || procname != "" {
-		if procname == "" {
-			if len(os.Args) == 0 {
-				// Skip prefix
-				goto configure
-			}
-			procname = filepath.Base(os.Args[0])
-			procname = procname[:len(procname)-len(filepath.Ext(procname))]
-		}
-		prefix = strings.Map(func(r rune) rune {
-			if r = unicode.ToUpper(r); r != '_' && !unicode.IsLetter(r) {
-				r = -1
-			}
-			return r
-		}, procname) + "_"
-	}
-
-configure:
-	json, _ = strconv.ParseBool(os.Getenv(prefix + "LOG_JSON"))
-	debug, _ = strconv.ParseBool(os.Getenv(prefix + "LOG_DEBUG"))
+	lvl, json, debug := GetEnvConfig(procname)
 	if level != zeroLevel {
-		var lvl zapcore.Level
-		if txt, ok := os.LookupEnv(prefix + "LOG_LEVEL"); ok && lvl.UnmarshalText([]byte(txt)) == nil {
-			level.SetLevel(lvl)
-		}
+		level.SetLevel(lvl)
 	}
-
 	return New(level, json, debug)
 }
 
