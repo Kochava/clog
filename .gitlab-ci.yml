@@ -1,0 +1,13 @@
+stages:
+  - test
+
+variables:
+  GO111MODULES: 'on'
+
+test:
+  image: golang:1-alpine
+  stage: test
+  script:
+    - go test -race -count 100 -coverprofile=cover.out
+    - go tool cover -html cover.out -out cover.html
+    - go tool cover -func cover.out
