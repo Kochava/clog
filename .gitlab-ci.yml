@@ -6,6 +6,7 @@ variables:
 
 test:
   image: golang:1-alpine
+  tags: [unprivileged, shell/sh, live]
   stage: test
   script:
     - go test -race -count 100 -coverprofile=cover.out
