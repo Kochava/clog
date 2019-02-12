@@ -8,7 +8,13 @@ test:
   image: golang:1
   tags: [unprivileged, shell/sh, live]
   stage: test
+  artifacts:
+    name: coverage
+    expire_in: 1 hour
+    paths:
+      - cover.out
+      - cover.html
   script:
     - go test -race -count 100 -coverprofile=cover.out
-    - go tool cover -html cover.out -out cover.html
+    - go tool cover -html cover.out -o cover.html
     - go tool cover -func cover.out
