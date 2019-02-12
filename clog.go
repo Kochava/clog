@@ -40,9 +40,12 @@ func envPrefix(procname string) string {
 // If the PROCNAME_LEVEL value is invalid or not set, it defaults to zap.WarnLevel.
 // If either the PROCNAME_JSON or PROCNAME_DEBUG, they default to false.
 func GetEnvConfig(procname string) (level zapcore.Level, json, debug bool) {
+	var err error
 	prefix := envPrefix(procname)
-	json, _ = strconv.ParseBool(os.Getenv(prefix + "LOG_JSON"))
-	debug, _ = strconv.ParseBool(os.Getenv(prefix + "LOG_DEBUG"))
+	json, err = strconv.ParseBool(os.Getenv(prefix + "LOG_JSON"))
+	json = err != nil || json
+	debug, err = strconv.ParseBool(os.Getenv(prefix + "LOG_DEBUG"))
+	debug = err == nil && debug
 	if txt, ok := os.LookupEnv(prefix + "LOG_LEVEL"); !ok || level.UnmarshalText([]byte(txt)) != nil {
 		level = zap.WarnLevel
 	}
