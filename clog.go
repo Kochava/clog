@@ -12,9 +12,6 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// LogFunc is any logging function, such as methods on zap.Logger.
-type LogFunc func(string, ...zapcore.Field)
-
 var zeroLevel = zap.AtomicLevel{}
 
 func sanitizeEnvRune(r rune) rune {
