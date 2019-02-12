@@ -3,9 +3,7 @@ package clog
 import (
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"time"
 	"unicode"
 
 	"go.uber.org/zap"
@@ -13,6 +11,8 @@ import (
 )
 
 var zeroLevel = zap.AtomicLevel{}
+
+var osGetenv = os.Getenv
 
 func sanitizeEnvRune(r rune) rune {
 	r = unicode.ToUpper(r)
@@ -37,66 +37,42 @@ func envPrefix(procname string) string {
 // GetEnvConfig returns the environment-configured logging level and whether to use JSON and debug
 // logging for procname. If procname is the empty string, os.Args[0] is used instead.
 //
-// If the PROCNAME_LEVEL value is invalid or not set, it defaults to zap.WarnLevel.
-// If either the PROCNAME_JSON or PROCNAME_DEBUG, they default to false.
-func GetEnvConfig(procname string) (level zapcore.Level, json, debug bool) {
-	var err error
+// If PROCNAME_LOG_MODE is set to "dev" (case-insensitive) then log output will be formatted for
+// reading on a console. Otherwise, logging defaults to a production configuration.
+func GetEnvConfig(procname string) (level zapcore.Level, isDev bool) {
+	const devEnvironment = "dev"
 	prefix := envPrefix(procname)
-	json, err = strconv.ParseBool(os.Getenv(prefix + "LOG_JSON"))
-	json = err != nil || json
-	debug, err = strconv.ParseBool(os.Getenv(prefix + "LOG_DEBUG"))
-	debug = err == nil && debug
+	isDev = strings.EqualFold(osGetenv(prefix+"LOG_MODE"), devEnvironment)
 	if txt, ok := os.LookupEnv(prefix + "LOG_LEVEL"); !ok || level.UnmarshalText([]byte(txt)) != nil {
 		level = zap.WarnLevel
 	}
 	return
 }
 
-// NewFromEnv allocates a new zap.Logger using configuration from the environment. This looks for
-// PROCNAME_LOG_JSON, PROCNAME_LOG_DEBUG, and PROCNAME_LOG_LEVEL to configure the logger. If JSON
-// logs are used, the format is standard zap without modification.
+// NewFromEnv allocates a new zap.Logger using configuration from the environment.
+// This looks for PROCNAME_LOG_MODE and PROCNAME_LOG_LEVEL to configure the logger.
+// If LOG_MODE is not "dev", the development configuration of Zap is used.
+// Otherwise, logging is configured for production.
 func NewFromEnv(procname string, level zap.AtomicLevel) (*zap.Logger, error) {
-	lvl, json, debug := GetEnvConfig(procname)
+	lvl, isDev := GetEnvConfig(procname)
 	if level != zeroLevel {
 		level.SetLevel(lvl)
 	}
-	return New(level, json, debug)
+	return New(level, isDev)
 }
 
 // New allocates a new zap.Logger using configuration based on the level given and the json and
 // debug parameters, as interpreted by Config.
-func New(level zap.AtomicLevel, json, debug bool) (*zap.Logger, error) {
-	return Config(level, json, debug).Build()
-}
-
-// ShortTimeEncoder is a time encoder that records short, glog-like times. This is only intended for
-// use with console-based logs. All standard options should be used for production configurations.
-func ShortTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-	const layout = `01-02 15:04:05.000`
-	enc.AppendString(t.UTC().Format(layout))
+func New(level zap.AtomicLevel, isDev bool) (*zap.Logger, error) {
+	return Config(level, isDev).Build()
 }
 
 // Config returns a zap.Config based on the level given and the json and debug parameters. If json
 // is true, the config uses a JSON encoder. If debug is true, production limits on logging are
 // removed and the development flag is set to true.
-func Config(level zap.AtomicLevel, json, debug bool) zap.Config {
-	cfg := zap.NewProductionConfig()
-	if level != zeroLevel {
-		cfg.Level = level
+func Config(level zap.AtomicLevel, isDev bool) zap.Config {
+	if isDev {
+		return zap.NewDevelopmentConfig()
 	}
-
-	if debug {
-		cfg.Sampling = nil
-		cfg.Development = true
-	}
-
-	if json {
-		cfg.Encoding = "json"
-	} else {
-		cfg.Encoding = "console"
-		cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-		cfg.EncoderConfig.EncodeDuration = zapcore.StringDurationEncoder
-	}
-
-	return cfg
+	return zap.NewProductionConfig()
 }
