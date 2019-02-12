@@ -5,7 +5,7 @@ variables:
   GO111MODULES: 'on'
 
 test:
-  image: golang:1-alpine
+  image: golang:1
   tags: [unprivileged, shell/sh, live]
   stage: test
   script:
