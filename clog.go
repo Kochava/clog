@@ -2,6 +2,7 @@ package clog
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -14,6 +15,10 @@ var zeroLevel = zap.AtomicLevel{}
 
 var osGetenv = os.Getenv
 
+var osArg0 = func() string {
+	return os.Args[0]
+}
+
 func sanitizeEnvRune(r rune) rune {
 	r = unicode.ToUpper(r)
 	if r == '_' || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
@@ -24,8 +29,11 @@ func sanitizeEnvRune(r rune) rune {
 
 func envPrefix(procname string) string {
 	if procname == "" && len(os.Args) > 0 {
-		procname = filepath.Base(os.Args[0])
-		procname = procname[:len(procname)-len(filepath.Ext(procname))]
+		procname = filepath.ToSlash(osArg0())
+	}
+	procname = filepath.Base(procname)
+	if ext := path.Ext(procname); ext != "" {
+		procname = procname[:len(procname)-len(ext)]
 	}
 	procname = strings.Map(sanitizeEnvRune, procname)
 	if procname == "" {
@@ -39,12 +47,22 @@ func envPrefix(procname string) string {
 //
 // If PROCNAME_LOG_MODE is set to "dev" (case-insensitive) then log output will be formatted for
 // reading on a console. Otherwise, logging defaults to a production configuration.
+//
+// If PROCNAME_LOG_LEVEL is set to a valid Zap logging level (info, warn, etc.), then that logging
+// level will be returned. Otherwise, the logging level defaults to zap.InfoLevel for production and
+// zap.DebugLevel for development.
 func GetEnvConfig(procname string) (level zapcore.Level, isDev bool) {
 	const devEnvironment = "dev"
 	prefix := envPrefix(procname)
 	isDev = strings.EqualFold(osGetenv(prefix+"LOG_MODE"), devEnvironment)
-	if txt, ok := os.LookupEnv(prefix + "LOG_LEVEL"); !ok || level.UnmarshalText([]byte(txt)) != nil {
-		level = zap.WarnLevel
+	levelText := osGetenv(prefix + "LOG_LEVEL")
+	if levelText != "" && level.UnmarshalText([]byte(levelText)) == nil {
+		// nop
+	} else if isDev {
+		level = zap.DebugLevel // development
+	} else {
+		level = zap.InfoLevel // production
+
 	}
 	return
 }
