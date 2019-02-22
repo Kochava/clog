@@ -8,6 +8,7 @@ test:
   image: golang:1
   tags: [unprivileged, shell/sh, live]
   stage: test
+  coverage: '/^total:\s*\(statements\)\s*(\d+\.\d+%)$/'
   artifacts:
     name: coverage
     expire_in: 1 hour
