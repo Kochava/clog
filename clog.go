@@ -88,9 +88,12 @@ func New(level zap.AtomicLevel, isDev bool) (*zap.Logger, error) {
 // Config returns a zap.Config based on the level given and the json and debug parameters. If json
 // is true, the config uses a JSON encoder. If debug is true, production limits on logging are
 // removed and the development flag is set to true.
-func Config(level zap.AtomicLevel, isDev bool) zap.Config {
+func Config(level zap.AtomicLevel, isDev bool) (conf zap.Config) {
 	if isDev {
-		return zap.NewDevelopmentConfig()
+		conf = zap.NewDevelopmentConfig()
+	} else {
+		conf = zap.NewProductionConfig()
 	}
-	return zap.NewProductionConfig()
+	conf.Level = level
+	return conf
 }
