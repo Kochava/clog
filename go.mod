@@ -1,4 +1,4 @@
-module git.dev.kochava.com/ireland/clog
+module github.com/Kochava/clog
 
 require (
 	go.uber.org/atomic v1.3.2 // indirect
