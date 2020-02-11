@@ -1,3 +1,5 @@
+// Package clog is a convenience package for passing Zap loggers through
+// contexts.
 package clog
 
 import (
