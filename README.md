@@ -26,9 +26,10 @@ A few examples of basic usage follow.
 
 ```go
 // Create a logger at info level with a production configuration.
-l, err := clog.New(zap.InfoLevel, false)
+level := zap.NewAtomicLevelAt(zap.InfoLevel)
+l, err := clog.New(level, false)
 if err != nil {
-  ...
+    panic(err)
 }
 l.Info("Ready")
 ```
