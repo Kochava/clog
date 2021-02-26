@@ -8,7 +8,6 @@ import (
 
 	"github.com/Kochava/clog"
 	"github.com/Kochava/clog/clogopencensus/clogdatadog"
-	"github.com/Kochava/clog/opencensus/clogdatadog"
 )
 
 func Example() {
