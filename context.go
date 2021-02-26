@@ -15,6 +15,8 @@ const (
 	// is generally on the side of being fairly gross, attaching a logger to a context tends to
 	// work fairly well in a sealed application (i.e., logging is tightly controller).
 	ctxLogger ctxKey = iota
+	// ctxFields is the context key for attaching FieldGenerators to a context.Context.
+	ctxFields
 )
 
 // WithLogger returns a context parented to ctx with the given logger attached as a value.
@@ -39,6 +41,8 @@ func Logger(ctx context.Context) (logger *zap.Logger) {
 	if logger == nil {
 		logger = zap.L()
 	}
+
+	logger = logger.With(generateFields(ctx)...)
 	return logger
 }
 
