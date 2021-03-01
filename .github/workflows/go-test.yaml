@@ -1,0 +1,28 @@
+#
+# This workflow will run `go vet` and `go test` for multiple golang versions when a commit
+# is pushed and for pull requests
+#
+name: Go Test
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ['1.14', '1.15', '1.16']
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+      - name: go mod vendor
+        run: go mod vendor
+      - name: go vet
+        run: go vet ./...
+      - name: go test
+        run: go test -mod=vendor ./...
