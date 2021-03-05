@@ -26,7 +26,9 @@ func WithFieldGenerators(ctx context.Context, generators ...FieldGenerator) cont
 		return ctx
 	}
 
-	return context.WithValue(ctx, ctxFields, append(FieldGenerators(ctx), generators...))
+	fs := FieldGenerators(ctx)
+	fs = append(make([]FieldGenerator, 0, len(fs)+len(generators)), fs...)
+	return context.WithValue(ctx, ctxFields, append(fs, generators...))
 }
 
 func generateFields(ctx context.Context) []zapcore.Field {
